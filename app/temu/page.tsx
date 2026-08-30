@@ -51,10 +51,9 @@ export default async function TemuPage() {
               <h3 className="font-bold text-lg text-gray-900 leading-tight mt-1 line-clamp-2">
                 {deal.title}
               </h3>
-              <p className="text-sm text-gray-600 line-clamp-3 mt-2">
+              <p className="text-sm text-gray-600 line-clamp-3 mt-2 whitespace-pre-line text-right leading-relaxed">
                 {deal.description}
-              </p>
-              
+            </p>
               <div className="mt-auto pt-5 flex items-center justify-between">
                 <span className="font-black text-2xl text-emerald-600">{deal.price}</span>
                 <a 
