@@ -18,6 +18,6 @@ export default async function AliExpressPage() {
   const deals = await getDeals();
 
   return (
-    <DealGrid deals={deals} storeName="AliExpress" colorTheme="orange" />
+    <DealGrid deals={deals} storeName="AliExpress" colorTheme="aliexpress" />
   );
 }

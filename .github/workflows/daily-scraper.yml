@@ -1,0 +1,36 @@
+name: Daily Deal Scraper
+
+on:
+  schedule:
+    # מריץ את הסקריפט כל לילה ב-03:00
+    - cron: '0 3 * * *'
+  workflow_dispatch: # מאפשר הרצה ידנית בלחיצת כפתור
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        working-directory: ./scraper
+        run: |
+          npm install
+          npx playwright install chromium
+
+      - name: Create Credentials File
+        working-directory: ./scraper
+        env:
+          GOOGLE_CREDS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: echo "$GOOGLE_CREDS" > credentials.json
+
+      - name: Run Scraper
+        working-directory: ./scraper
+        run: node run.js
