@@ -20,16 +20,27 @@ async function runScraper() {
     const rows = await sheet.getRows();
     console.log(`נטענו ${rows.length} שורות מהגיליון. מתחיל סקרייפינג...`);
 
-    // ביטלנו את דגלי האבטחה המחשידים והשארנו רק הסוואת אוטומציה
     const browser = await chromium.launch({ 
       headless: true,
       args: ['--disable-blink-features=AutomationControlled', '--window-size=1920,1080']
     });
     
+    // הוספת כותרות אבטחה (Headers) שמדמות דפדפן כרום אנושי מדויק כדי לעקוף את Akamai
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
-      locale: 'he-IL'
+      locale: 'he-IL',
+      extraHTTPHeaders: {
+        'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-User': '?1',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"'
+      }
     });
     const page = await context.newPage();
 
@@ -61,13 +72,13 @@ async function runScraper() {
           console.log('🛑 זוהתה חסימת CAPTCHA מול קישור השותפים!');
           const itemMatch = currentUrl.match(/item\/(\d+)\.html/);
           if (itemMatch) {
-            const cleanUrl = `https://www.aliexpress.com/item/${itemMatch[1]}.html`;
-            console.log(`🔄 מפעיל עקיפה: מנווט ישירות לכתובת הנקייה של המוצר...`);
+            // מעבר לתת-הדומיין המקומי (he.aliexpress.com) שבו חומת האש סלחנית יותר
+            const cleanUrl = `https://he.aliexpress.com/item/${itemMatch[1]}.html`;
+            console.log(`🔄 מפעיל עקיפה: מנווט ישירות לכתובת המקומית הנקייה...`);
             await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
           }
         } 
         
-        // המתנה לרינדור הסקריפטים של העמוד
         await page.waitForTimeout(8000); 
 
         const finalUrl = page.url();
@@ -80,27 +91,22 @@ async function runScraper() {
           let rating = null;
           let sold = null;
           
-          // 1. נשק יום הדין: שליפה ישירה ממאגר הנתונים הסמוי של אליאקספרס
           try {
             if (window.runParams && window.runParams.data) {
               const data = window.runParams.data;
-              
               if (data.priceModule) {
                 price = data.priceModule.formatedActivityPrice || data.priceModule.formatedPrice;
               }
-              
               if (data.titleModule && data.titleModule.tradeCount) {
                 sold = data.titleModule.tradeCount;
                 if (!sold.includes('נמכרו')) sold += ' נמכרו';
               }
-              
               if (data.titleModule && data.titleModule.feedbackRating) {
                 rating = data.titleModule.feedbackRating.averageStar;
               }
             }
           } catch (e) {}
 
-          // 2. גיבוי קלאסי דרך תגיות מטא
           if (!price) {
             const metaPrice = document.querySelector('meta[property="og:price:amount"], meta[property="product:price:amount"]');
             const metaCurrency = document.querySelector('meta[property="og:price:currency"], meta[property="product:price:currency"]');
@@ -110,7 +116,6 @@ async function runScraper() {
             } 
           }
           
-          // 3. גיבוי שלישי דרך סלקטורים עיצוביים
           if (!price) {
             const priceSelectors = ['[class*="price--currentPriceText"]', '[class*="Price--currentPrice"]', '.product-price-current', '[class*="CurrentPrice--"]'];
             for (const sel of priceSelectors) {
