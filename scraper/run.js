@@ -7,12 +7,10 @@ const SHEET_ID = '1quhfHpoheGvE75s8xjDz2zoXP1H9xz9K5ngKYS8_J94';
 
 async function runScraper() {
   try {
-    // אתחול הגיליון והתחברות ישירה
     const doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth(creds); 
     await doc.loadInfo(); 
     
-    // בחירת הלשונית
     const sheet = doc.sheetsByTitle['AliExpress'];
     if (!sheet) {
       throw new Error("הלשונית 'AliExpress' לא נמצאה בגיליון.");
@@ -21,22 +19,22 @@ async function runScraper() {
     const rows = await sheet.getRows();
     console.log(`נטענו ${rows.length} שורות מהגיליון. מתחיל סקרייפינג...`);
 
-    // הפעלת הדפדפן 
     const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext();
+    
+    // הגדרת User-Agent כדי שאליאקספרס יחשוב שזה גולש אמיתי מכרום ולא בוט
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 }
+    });
     const page = await context.newPage();
 
-    // ריצה על הלינקים
     for (const row of rows) {
-      // בגרסה 3 ניגשים לעמודה ישירות כשם מאפיין (נניח שהעמודה נקראת 'link')
       const url = row.link; 
       if (!url) continue;
 
-      console.log(`מנווט ל: ${url}`);
+      console.log(`\nמנווט ל: ${url}`);
       try {
         const isUpdateEmptyOnly = process.env.UPDATE_ONLY_EMPTY === 'true';
-        
-        // מוודא שהתא באמת מכיל טקסט ולא רק רווחים או תווים ריקים
         const hasPrice = row.price && row.price.toString().trim() !== '';
 
         if (isUpdateEmptyOnly && hasPrice) {
@@ -44,16 +42,16 @@ async function runScraper() {
           continue; 
         }
 
-        // מחכים פחות זמן לטעינה המלאה, אבל נותנים ספייס להפניות של הלינק
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-        
-        // המתנה של 6 שניות כדי לתת לפופאפים לקפוץ ולדף להתרנדר לגמרי
         await page.waitForTimeout(6000); 
 
-        // שמירת צילום מסך בכל ריצה כדי שתוכלי לראות מה חוסם אותנו
+        // הדפסת כותרת העמוד כדי שנדע אם נפלנו על חסימת אימות
+        const pageTitle = await page.title();
+        console.log(`העמוד נטען. כותרת: ${pageTitle}`);
+
         await page.screenshot({ path: 'debug_page.png' });
 
-       const extractedData = await page.evaluate(() => {
+        const extractedData = await page.evaluate(() => {
           let price = null;
           let rating = null;
           let sold = null;
@@ -70,7 +68,6 @@ async function runScraper() {
             if (el && el.innerText.match(/\d/)) { rating = el.innerText.trim(); break; }
           }
 
-          // שליפת נתוני רכישות (Sold) - גרסה מורחבת
           const soldSelectors = [
             '[class*="reviewer--sold"]', 
             '.product-reviewer-sold', 
@@ -84,11 +81,9 @@ async function runScraper() {
           for (const sel of soldSelectors) {
             const el = document.querySelector(sel);
             if (el && el.innerText) {
-              // שליפת טקסט גולמי וחיפוש תבנית של מספרים, פסיקים, K או + (למשל: 10K+)
               const text = el.innerText.trim();
               const match = text.match(/[\d.,]+[Kk+]?/);
               if (match) { 
-                // נוסיף את המילה "נמכרו" כדי שייראה יפה בכרטיסייה
                 sold = match[0] + ' נמכרו'; 
                 break; 
               }
@@ -104,16 +99,18 @@ async function runScraper() {
           if (extractedData.sold) row.sold = extractedData.sold;
           
           await row.save();
-          console.log(`עודכן! מחיר: ${extractedData.price} | דירוג: ${extractedData.rating} | נמכרו: ${extractedData.sold}`);
+          console.log(`✅ עודכן! מחיר: ${extractedData.price || '-'} | דירוג: ${extractedData.rating || '-'} | נמכרו: ${extractedData.sold || '-'}`);
+        } else {
+          console.log(`⚠️ לא נמצאו נתונים! ייתכן שהסלקטורים לא תואמים או שאליאקספרס חסם אותנו בדף הזה.`);
         }
 
       } catch (error) {
-        console.error(`שגיאה בשליפת הנתונים מהקישור: ${url}`, error.message);
+        console.error(`❌ שגיאה בשליפת הנתונים מהקישור: ${url}`, error.message);
       }
     }
 
     await browser.close();
-    console.log('העדכון היומי הסתיים בהצלחה!');
+    console.log('\nהעדכון היומי הסתיים בהצלחה!');
     
   } catch (err) {
     console.error("שגיאה כללית בהפעלת הסקריפט:", err);
