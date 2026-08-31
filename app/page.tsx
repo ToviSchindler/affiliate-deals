@@ -1,7 +1,6 @@
 import StoreFront from "../components/StoreFront";
 import FloatingCouponBadge from "../components/FloatingCouponBadge"; // הייבוא של כפתור האנימציה!
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import creds from './credentials.json';
 
 export const revalidate = 60; 
 
@@ -10,7 +9,10 @@ const SHEET_ID = '1quhfHpoheGvE75s8xjDz2zoXP1H9xz9K5ngKYS8_J94';
 async function fetchDeals(storeName: string) {
   try {
     const doc = new GoogleSpreadsheet(SHEET_ID);
-    await doc.useServiceAccountAuth(creds);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL as string,
+      private_key: (process.env.GOOGLE_PRIVATE_KEY as string).replace(/\\n/g, '\n'),
+    });
     await doc.loadInfo();
     
     const sheet = doc.sheetsByTitle[storeName];
