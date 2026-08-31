@@ -8,6 +8,7 @@ export interface Deal {
   image: string;
   price: string;
   category: string;
+  subcategory?: string;
   description: string;
   rating?: string;
   sold?: string;
@@ -15,16 +16,28 @@ export interface Deal {
 
 export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal[], storeName: string, colorTheme: 'aliexpress' | 'temu' }) {
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubCategory, setSelectedSubCategory] = useState('');
   const [sortOrder, setSortOrder] = useState('default');
   const [searchTerm, setSearchTerm] = useState('');
 
   const categories = Array.from(new Set(deals.map(d => d.category || 'כללי')));
+  
+  // חילוץ תתי-הקטגוריות הרלוונטיות רק לקטגוריה הראשית שנבחרה
+  const currentSubCategories = useMemo(() => {
+    if (!selectedCategory || selectedCategory === 'הכל') return [];
+    const relevantDeals = deals.filter(d => (d.category || 'כללי') === selectedCategory && d.subcategory);
+    return Array.from(new Set(relevantDeals.map(d => d.subcategory as string)));
+  }, [deals, selectedCategory]);
 
   const filteredDeals = useMemo(() => {
     let result = [...deals];
     
     if (selectedCategory && selectedCategory !== 'הכל') {
       result = result.filter(d => (d.category || 'כללי') === selectedCategory);
+      // סינון נוסף לפי תת-קטגוריה אם נבחרה
+      if (selectedSubCategory) {
+        result = result.filter(d => d.subcategory === selectedSubCategory);
+      }
     }
 
     if (searchTerm.trim() !== '') {
@@ -43,7 +56,7 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
       });
     }
     return result;
-  }, [deals, selectedCategory, sortOrder, searchTerm]);
+  }, [deals, selectedCategory, selectedSubCategory, sortOrder, searchTerm]);
 
   const theme = {
     aliexpress: {
@@ -51,12 +64,14 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
       bg: 'bg-[#E52F20] hover:bg-[#c9271a]',
       badge: 'bg-red-50 text-[#E52F20] border border-red-100',
       activeTab: 'bg-red-50 text-[#E52F20] font-bold border-r-4 border-[#E52F20]',
+      subTab: 'bg-red-100 text-[#E52F20] font-semibold',
     },
     temu: {
       text: 'text-[#FB7701]',
       bg: 'bg-[#FB7701] hover:bg-[#e06900]',
       badge: 'bg-orange-50 text-[#FB7701] border border-orange-100',
       activeTab: 'bg-orange-50 text-[#FB7701] font-bold border-r-4 border-[#FB7701]',
+      subTab: 'bg-orange-100 text-[#FB7701] font-semibold',
     }
   };
 
@@ -64,12 +79,11 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
 
   const handleCategoryClick = (cat: string) => {
     setSelectedCategory(selectedCategory === cat && cat !== '' ? '' : cat);
+    setSelectedSubCategory(''); // איפוס תת-קטגוריה בעת החלפת קטגוריה ראשית
   };
 
-  // פונקציה חכמה לניקוי המחיר מטקסטים עודפים
   const formatPrice = (priceStr: string) => {
     if (!priceStr) return '';
-    // שולף רק את המספר הראשון (המחיר האמיתי) ומתעלם משאר הטקסט
     const numMatch = priceStr.match(/\d+(?:\.\d+)?/);
     if (numMatch) {
       const symbol = priceStr.includes('$') ? '$' : '₪';
@@ -103,13 +117,34 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
               הכל
             </button>
             {categories.map(c => (
-              <button
-                key={c}
-                onClick={() => handleCategoryClick(c)}
-                className={`text-right px-3 py-2 rounded-md text-sm transition-all ${selectedCategory === c ? current.activeTab : 'text-gray-600 hover:bg-gray-50'}`}
-              >
-                {c}
-              </button>
+              <div key={c} className="flex flex-col gap-1 w-full">
+                <button
+                  onClick={() => handleCategoryClick(c)}
+                  className={`text-right px-3 py-2 rounded-md text-sm transition-all ${selectedCategory === c ? current.activeTab : 'text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {c}
+                </button>
+                {/* הצגת תתי-קטגוריות אם זו הקטגוריה הפעילה ויש לה תתי-קטגוריות */}
+                {selectedCategory === c && currentSubCategories.length > 0 && (
+                  <div className="flex flex-row lg:flex-col flex-wrap gap-1 pr-3 mt-1 mb-2 border-r-2 border-gray-100">
+                    <button
+                      onClick={() => setSelectedSubCategory('')}
+                      className={`text-right px-2 py-1.5 rounded text-xs transition-all ${!selectedSubCategory ? current.subTab : 'text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      הכל ב{c}
+                    </button>
+                    {currentSubCategories.map(sub => (
+                      <button
+                        key={sub}
+                        onClick={() => setSelectedSubCategory(sub)}
+                        className={`text-right px-2 py-1.5 rounded text-xs transition-all ${selectedSubCategory === sub ? current.subTab : 'text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </aside>
@@ -158,7 +193,7 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
                 
                 <div className="p-4 flex flex-col flex-grow gap-2.5">
                   <div className="flex flex-wrap items-start content-start justify-start gap-1.5 min-h-[44px]">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${current.badge}`}>{deal.category || 'כללי'}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${current.badge}`}>{deal.subcategory || deal.category || 'כללי'}</span>
                     {deal.rating && (
                       <div className="flex items-center gap-0.5 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-md border border-amber-100">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 fill-current shrink-0" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
@@ -175,7 +210,6 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
                   <h3 className="font-bold text-sm text-gray-900 leading-snug line-clamp-2 mt-1">{deal.title}</h3>
                   <p className="text-xs text-gray-600 line-clamp-2 whitespace-pre-line leading-relaxed">{deal.description}</p>
                   
-                  {/* נעילת השורה התחתונה לעיצוב נקי וחלק */}
                   <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
                     <div className="font-black text-xl text-gray-900 whitespace-nowrap" dir="ltr">
                       {formatPrice(deal.price)}
