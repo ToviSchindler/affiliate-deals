@@ -1,5 +1,8 @@
 require('dotenv').config();
-const { chromium } = require('playwright');
+const { chromium } = require('playwright-extra'); // שימוש בגרסה המורחבת
+const stealth = require('puppeteer-extra-plugin-stealth')();
+chromium.use(stealth); // הפעלת ההסוואה
+
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const creds = require('./credentials.json');
 
@@ -21,10 +24,10 @@ async function runScraper() {
 
     const browser = await chromium.launch({ headless: true });
     
-    // הגדרת User-Agent כדי שאליאקספרס יחשוב שזה גולש אמיתי מכרום ולא בוט
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      viewport: { width: 1920, height: 1080 }
+      viewport: { width: 1920, height: 1080 },
+      locale: 'he-IL'
     });
     const page = await context.newPage();
 
@@ -45,7 +48,6 @@ async function runScraper() {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
         await page.waitForTimeout(6000); 
 
-        // הדפסת כותרת העמוד כדי שנדע אם נפלנו על חסימת אימות
         const pageTitle = await page.title();
         console.log(`העמוד נטען. כותרת: ${pageTitle}`);
 
