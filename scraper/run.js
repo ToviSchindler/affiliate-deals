@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { chromium } = require('playwright-extra'); // שימוש בגרסה המורחבת
+const { chromium } = require('playwright-extra'); 
 const stealth = require('puppeteer-extra-plugin-stealth')();
-chromium.use(stealth); // הפעלת ההסוואה
+chromium.use(stealth); 
 
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const creds = require('./credentials.json');
@@ -22,7 +22,6 @@ async function runScraper() {
     const rows = await sheet.getRows();
     console.log(`נטענו ${rows.length} שורות מהגיליון. מתחיל סקרייפינג...`);
 
-    // אתחול הדפדפן עם ארגומנטים שמוחקים את זיהוי האוטומציה של כרום
     const browser = await chromium.launch({ 
       headless: true,
       args: ['--disable-blink-features=AutomationControlled']
@@ -49,22 +48,26 @@ async function runScraper() {
           continue; 
         }
 
-        // טעינת הקישור הראשוני (s.click)
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
         
-        // המתנה לשינוי ה-URL כדי לוודא ששרשרת ההפניות של האפיליאט הסתיימה
         try {
           await page.waitForFunction(() => !window.location.href.includes('s.click.aliexpress'), { timeout: 25000 });
-          console.log('הפניית האפיליאט עברה בהצלחה למסך המוצר.');
+          console.log('הפניית האפיליאט עברה בהצלחה. ממתין לטעינת דף המוצר...');
+          
+          // הפקודה החדשה: מחכה שהדף הסופי עצמו יסיים להיטען
+          await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
         } catch (e) {
-          console.log('⚠️ אזהרה: ההפניה למוצר התעכבה, מנסה להמשיך בסריקה בכל זאת.');
+          console.log('⚠️ אזהרה: ההפניה למוצר התעכבה.');
         }
 
-        // המתנה לרינדור סופי של המחירים והביקורות
-        await page.waitForTimeout(5000); 
+        // הגדלנו מעט את זמן ההמתנה לרינדור הסופי של המחירים
+        await page.waitForTimeout(8000); 
 
+        // מדפיסים את הכתובת הסופית כדי שנוכל לחקור במקרה של תקלה
+        const finalUrl = page.url();
         const pageTitle = await page.title();
-        console.log(`העמוד נטען. כותרת: ${pageTitle}`);
+        console.log(`כתובת סופית: ${finalUrl}`);
+        console.log(`העמוד נטען. כותרת: ${pageTitle || '[כותרת ריקה] - ייתכן שהדף נטען לאט'}`);
 
         await page.screenshot({ path: 'debug_page.png' });
 
