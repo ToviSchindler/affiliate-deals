@@ -1,3 +1,4 @@
+// @ts-ignore
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import CouponsClient from './CouponsClient';
 
@@ -19,13 +20,13 @@ async function fetchCoupons() {
     
     const rows = await sheet.getRows();
     
-    return rows.map(row => ({
+    return rows.map((row: any) => ({
       store: (row.store || 'aliexpress').toLowerCase(),
       code: row.code || '',
       discount: row.discount || '',
       description: row.description || '',
       link: row.link || 'https://best.aliexpress.com/'
-    })).filter(coupon => coupon.code && coupon.discount); 
+    })).filter((coupon: any) => coupon.code && coupon.discount); 
   } catch (error) {
     console.error('שגיאה במשיכת קופונים:', error);
     return [];

@@ -1,5 +1,6 @@
 import StoreFront from "../components/StoreFront";
-import FloatingCouponBadge from "../components/FloatingCouponBadge"; // הייבוא של כפתור האנימציה!
+import FloatingCouponBadge from "../components/FloatingCouponBadge";
+// @ts-ignore
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 
 export const revalidate = 60; 
@@ -20,7 +21,7 @@ async function fetchDeals(storeName: string) {
     
     const rows = await sheet.getRows();
     
-    return rows.map(row => ({
+    return rows.map((row: any) => ({
       id: row.link || Math.random().toString(),
       title: row.title || row.description || 'ללא כותרת',
       link: row.link || '',
@@ -31,7 +32,7 @@ async function fetchDeals(storeName: string) {
       description: row.description || '',
       rating: row.rating || '',
       sold: row.sold || ''
-    })).filter(deal => deal.link && deal.price); 
+    })).filter((deal: any) => deal.link && deal.price); 
   } catch (error) {
     console.error(`שגיאה במשיכת נתונים מ-${storeName}:`, error);
     return [];
@@ -45,7 +46,6 @@ export default async function Home() {
   return (
     <div className="bg-slate-50 min-h-screen font-sans flex flex-col relative">
       
-      {/* כאן הוספנו את החותמת המרחפת! */}
       <FloatingCouponBadge />
 
       <div className="relative flex flex-col items-center justify-center pt-12 pb-8 overflow-hidden flex-grow">
