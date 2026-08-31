@@ -48,52 +48,52 @@ export default async function Home() {
       
       <FloatingCouponBadge />
 
-      <div className="relative flex flex-col items-center justify-center pt-12 pb-8 overflow-hidden flex-grow">
-        <div className="absolute top-[-10%] left-[-10%] w-80 h-80 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
-        <div className="absolute top-[-10%] right-[-10%] w-80 h-80 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+      <div className="relative flex flex-col items-center justify-center pt-20 pb-16 overflow-hidden flex-grow">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse" style={{ animationDelay: '1.5s' }}></div>
 
-        <div className="relative z-10 flex flex-col items-center w-full max-w-5xl px-4 mt-2">
+        <div className="relative z-10 flex flex-col items-center w-full max-w-6xl px-4 mt-4">
           
-          <div className="flex items-center gap-2.5 px-4 py-1.5 bg-white rounded-full shadow-sm border border-slate-200 mb-5 cursor-default">
-            <span className="text-xl">🎯</span>
-            <span className="text-xs md:text-sm font-medium text-slate-700 tracking-wide">רק מוצרים מומלצים ודילים משתלמים</span>
+          <div className="flex items-center gap-3 px-6 py-2.5 bg-white rounded-full shadow-sm border border-slate-200 mb-8 cursor-default">
+            <span className="text-2xl">🎯</span>
+            <span className="text-sm md:text-base font-semibold text-slate-700 tracking-wide">רק מוצרים מומלצים ודילים משתלמים</span>
           </div>
 
-          <div className="text-center max-w-3xl mb-8 space-y-2">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <div className="text-center max-w-4xl mb-12 space-y-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
               המוצרים הכי שווים ברשת, <br className="hidden md:block"/>
               <span className="text-slate-700">נבדקו ונבחרו עבורכם.</span>
             </h1>
-            <p className="text-sm md:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed px-4">
+            <p className="text-base md:text-lg lg:text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed px-4">
               אנחנו סורקים את הרשת ומביאים לכם רק את הדילים המשתלמים ביותר – איכותיים, מסודרים ומוכנים לקנייה בראש שקט.
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4 w-full max-w-4xl relative mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-slate-100">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 w-full max-w-5xl relative mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-slate-100">
               
-              <div className="flex flex-col items-center text-center px-1 py-2 md:py-0 group cursor-default transition-transform hover:scale-105 duration-300">
-                <div className="text-blue-600 mb-1.5 bg-blue-50 p-2 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <div className="flex flex-col items-center text-center px-2 py-4 md:py-2 group cursor-default transition-transform hover:scale-105 duration-300">
+                <div className="text-blue-600 mb-3 bg-blue-50 p-4 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
-                <h3 className="text-xs md:text-sm font-bold text-slate-900 mb-0.5">איכות מאומתת</h3>
-                <p className="text-[11px] md:text-xs text-slate-600 leading-tight">בוחרים רק מוצרים עם דירוג גבוה שנוסו ונבדקו.</p>
+                <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2">איכות מאומתת</h3>
+                <p className="text-sm md:text-base text-slate-600 leading-relaxed">בוחרים רק מוצרים עם דירוג גבוה שנוסו ונבדקו.</p>
               </div>
               
-              <div className="flex flex-col items-center text-center px-1 py-2 md:py-0 group cursor-default transition-transform hover:scale-105 duration-300">
-                <div className="text-emerald-600 mb-1.5 bg-emerald-50 p-2 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <div className="flex flex-col items-center text-center px-2 py-4 md:py-2 group cursor-default transition-transform hover:scale-105 duration-300">
+                <div className="text-emerald-600 mb-3 bg-emerald-50 p-4 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 </div>
-                <h3 className="text-xs md:text-sm font-bold text-slate-900 mb-0.5">חיסכון מובטח</h3>
-                <p className="text-[11px] md:text-xs text-slate-600 leading-tight">מוצאים את המחירים הטובים ביותר ברשת.</p>
+                <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2">חיסכון מובטח</h3>
+                <p className="text-sm md:text-base text-slate-600 leading-relaxed">מוצאים את המחירים הטובים ביותר ברשת.</p>
               </div>
               
-              <div className="flex flex-col items-center text-center px-1 py-2 md:py-0 group cursor-default transition-transform hover:scale-105 duration-300">
-                <div className="text-purple-600 mb-1.5 bg-purple-50 p-2 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.5-1 2-1.5.5-1 1-1.5 1-2.5 0-2.7-1.5-5-3-5Z"/><path d="M15 8.5c-.5-.5-1-.5-1.5-.5"/><path d="M11.5 7.5c-.5-.5-1-.5-1.5-.5"/></svg>
+              <div className="flex flex-col items-center text-center px-2 py-4 md:py-2 group cursor-default transition-transform hover:scale-105 duration-300">
+                <div className="text-purple-600 mb-3 bg-purple-50 p-4 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.5-1 2-1.5.5-1 1-1.5 1-2.5 0-2.7-1.5-5-3-5Z"/><path d="M15 8.5c-.5-.5-1-.5-1.5-.5"/><path d="M11.5 7.5c-.5-.5-1-.5-1.5-.5"/></svg>
                 </div>
-                <h3 className="text-xs md:text-sm font-bold text-slate-900 mb-0.5">ליווי מלא</h3>
-                <p className="text-[11px] md:text-xs text-slate-600 leading-tight">איתכם לאורך כל הדרך, מהקנייה ועד לקבלת החבילה.</p>
+                <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2">ליווי מלא</h3>
+                <p className="text-sm md:text-base text-slate-600 leading-relaxed">איתכם לאורך כל הדרך, מהקנייה ועד לקבלת החבילה.</p>
               </div>
 
             </div>
