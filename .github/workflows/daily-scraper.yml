@@ -1,11 +1,10 @@
 name: Daily Deal Scraper
-
 on:
   schedule:
-    # מריץ את הסקריפט כל לילה ב-03:00
     - cron: '0 3 * * *'
-  workflow_dispatch: # מאפשר הרצה ידנית בלחיצת כפתור
-
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-scraper]
 jobs:
   scrape:
     runs-on: ubuntu-latest

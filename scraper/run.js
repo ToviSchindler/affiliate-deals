@@ -43,51 +43,58 @@ async function runScraper() {
         // שמירת צילום מסך בכל ריצה כדי שתוכלי לראות מה חוסם אותנו
         await page.screenshot({ path: 'debug_page.png' });
 
-        const extractedData = await page.evaluate(() => {
+       const extractedData = await page.evaluate(() => {
           let price = null;
           let rating = null;
+          let sold = null;
           
-          // שליפת מחיר
-          const priceSelectors = [
-            '[class*="price--currentPriceText"]', 
-            '.product-price-value',
-            '.uniform-banner-box-price',
-            '.price--current--'
-          ];
+          const priceSelectors = ['[class*="price--currentPriceText"]', '.product-price-value', '.uniform-banner-box-price', '.price--current--'];
           for (const sel of priceSelectors) {
             const el = document.querySelector(sel);
-            if (el && el.innerText.match(/\d/)) {
-              price = el.innerText.trim();
-              break;
-            }
+            if (el && el.innerText.match(/\d/)) { price = el.innerText.trim(); break; }
           }
 
-          // שליפת דירוג כוכבים / ביקורות
-          const ratingSelectors = [
-            '.overview-rating-average',
-            '[class*="reviewer--rating"]',
-            '[class*="rating--"]',
-            '.product-reviewer-reviews'
-          ];
+          const ratingSelectors = ['.overview-rating-average', '[class*="reviewer--rating"]', '[class*="rating--"]', '.product-reviewer-reviews'];
           for (const sel of ratingSelectors) {
             const el = document.querySelector(sel);
-            if (el && el.innerText.match(/\d/)) {
-              rating = el.innerText.trim();
-              break;
+            if (el && el.innerText.match(/\d/)) { rating = el.innerText.trim(); break; }
+          }
+
+          // שליפת נתוני רכישות (Sold) - גרסה מורחבת
+          const soldSelectors = [
+            '[class*="reviewer--sold"]', 
+            '.product-reviewer-sold', 
+            '[class*="trade-count"]',
+            '[class*="format--trade--"]',
+            '[class*="tradeInfo--"]',
+            '[class*="sales-text"]',
+            'span[class*="trade"]'
+          ];
+          
+          for (const sel of soldSelectors) {
+            const el = document.querySelector(sel);
+            if (el && el.innerText) {
+              // שליפת טקסט גולמי וחיפוש תבנית של מספרים, פסיקים, K או + (למשל: 10K+)
+              const text = el.innerText.trim();
+              const match = text.match(/[\d.,]+[Kk+]?/);
+              if (match) { 
+                // נוסיף את המילה "נמכרו" כדי שייראה יפה בכרטיסייה
+                sold = match[0] + ' נמכרו'; 
+                break; 
+              }
             }
           }
 
-          return { price, rating };
+          return { price, rating, sold };
         });
 
-        if (extractedData.price || extractedData.rating) {
+        if (extractedData.price || extractedData.rating || extractedData.sold) {
           if (extractedData.price) row.price = extractedData.price;
           if (extractedData.rating) row.rating = extractedData.rating;
+          if (extractedData.sold) row.sold = extractedData.sold;
           
           await row.save();
-          console.log(`עודכן! מחיר: ${extractedData.price || 'ללא שינוי'} | דירוג: ${extractedData.rating || 'לא זוהה'}`);
-        } else {
-          console.log(`לא זוהו נתונים לעדכון בעמוד זה.`);
+          console.log(`עודכן! מחיר: ${extractedData.price} | דירוג: ${extractedData.rating} | נמכרו: ${extractedData.sold}`);
         }
 
       } catch (error) {

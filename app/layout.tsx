@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+// import { Inter } from "next/font/google";
+import { Rubik } from 'next/font/google';
+import './globals.css';
 import "./globals.css";
 import Link from "next/link";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
+// הגדרת הפונט עם תמיכה בעברית
+const rubik = Rubik({ 
+  subsets: ['hebrew', 'latin'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: "DealFinder - הדילים החמים ברשת",
@@ -17,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl">
-      <body className={`${inter.className} bg-gray-50 text-gray-900`}>
+      <body className={`${rubik.className} bg-gray-50 text-gray-900`}>
         <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
           <div className="max-w-[1200px] mx-auto p-4 flex justify-between items-center">
             <Link href="/" className="flex items-center gap-2.5 group">

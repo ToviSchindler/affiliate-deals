@@ -9,30 +9,32 @@ export interface Deal {
   price: string;
   category: string;
   description: string;
+  rating?: string;
+  sold?: string;
 }
 
 export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal[], storeName: string, colorTheme: 'aliexpress' | 'temu' }) {
-  const [selectedCategory, setSelectedCategory] = useState('הכל');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [sortOrder, setSortOrder] = useState('default');
 
   const categories = Array.from(new Set(deals.map(d => d.category || 'כללי')));
 
   const filteredDeals = useMemo(() => {
     let result = [...deals];
-    if (selectedCategory !== 'הכל') {
+    if (selectedCategory && selectedCategory !== 'הכל') {
       result = result.filter(d => (d.category || 'כללי') === selectedCategory);
     }
+
     if (sortOrder === 'price-asc' || sortOrder === 'price-desc') {
       result.sort((a, b) => {
-        const priceA = parseFloat(a.price.replace(/[^\d.-]/g, '')) || 0;
-        const priceB = parseFloat(b.price.replace(/[^\d.-]/g, '')) || 0;
+        const priceA = parseFloat(a.price?.replace(/[^\d.-]/g, '')) || 0;
+        const priceB = parseFloat(b.price?.replace(/[^\d.-]/g, '')) || 0;
         return sortOrder === 'price-asc' ? priceA - priceB : priceB - priceA;
       });
     }
     return result;
   }, [deals, selectedCategory, sortOrder]);
 
-  // הגדרת הצבעים המדויקים לפי המותג
   const theme = {
     aliexpress: {
       text: 'text-[#E52F20]',
@@ -49,29 +51,42 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
   };
 
   const current = colorTheme === 'aliexpress' ? theme.aliexpress : theme.temu;
-  const inactiveTabClass = 'text-gray-600 hover:bg-gray-50 border-r-4 border-transparent hover:border-gray-300';
 
   const handleCategoryClick = (cat: string) => {
-    if (selectedCategory === cat && cat !== 'הכל') {
-      setSelectedCategory('הכל');
+    if (selectedCategory === cat && cat !== '') {
+      setSelectedCategory('');
     } else {
       setSelectedCategory(cat);
     }
   };
 
+  const formatPrice = (priceStr: string) => {
+    if (!priceStr) return '';
+    return priceStr.replace(/^([^\d]+)([\d]+)/, '$1 $2');
+  };
+
+  const formatSold = (soldStr?: string) => {
+    if (!soldStr) return '';
+    return soldStr.replace(/([\d,.]+)/, (match) => {
+      // מסיר פסיקים ונקודות (כמו 4.000) כדי לחשב נכון
+      const num = parseInt(match.replace(/[,.]/g, ''), 10);
+      return num >= 1000 ? (num / 1000) + 'K' : match;
+    });
+  };
+
   return (
-    <div className="pt-8 pb-16">
-      <h2 className={`text-4xl font-extrabold text-center mb-10 tracking-tight ${current.text}`}>
+    <div className="pt-6 pb-12" dir="rtl">
+      <h2 className={`text-3xl font-extrabold text-center mb-8 tracking-tight ${current.text}`}>
         הדילים החמים - {storeName}
       </h2>
-
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        <aside className="w-full lg:w-56 shrink-0 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
-          <h3 className="font-bold text-lg mb-4 text-gray-800 border-b border-gray-100 pb-2">קטגוריות</h3>
+      
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <aside className="w-full lg:w-56 shrink-0 bg-white p-5 rounded-xl shadow-sm border border-gray-100 sticky top-24">
+          <h3 className="font-bold text-base mb-3 text-gray-800 border-b border-gray-100 pb-2">קטגוריות</h3>
           <div className="flex flex-row lg:flex-col flex-wrap gap-1">
             <button
               onClick={() => handleCategoryClick('הכל')}
-              className={`text-right px-4 py-2.5 rounded-lg transition-all ${selectedCategory === 'הכל' ? current.activeTab : inactiveTabClass}`}
+              className={`text-right px-3 py-2 rounded-md text-sm transition-all ${selectedCategory === 'הכל' || !selectedCategory ? current.activeTab : 'text-gray-600 hover:bg-gray-50'}`}
             >
               הכל
             </button>
@@ -79,7 +94,7 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
               <button
                 key={c}
                 onClick={() => handleCategoryClick(c)}
-                className={`text-right px-4 py-2.5 rounded-lg transition-all ${selectedCategory === c ? current.activeTab : inactiveTabClass}`}
+                className={`text-right px-3 py-2 rounded-md text-sm transition-all ${selectedCategory === c ? current.activeTab : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 {c}
               </button>
@@ -88,60 +103,86 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
         </aside>
 
         <main className="flex-1 w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 px-4 rounded-2xl shadow-sm border border-gray-100 mb-6 gap-4">
-            <div className="text-gray-500 text-sm font-medium">
+          <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 px-4 rounded-xl shadow-sm mb-5 border border-gray-100">
+            <div className="text-gray-500 text-sm font-medium w-full sm:w-auto text-right mb-3 sm:mb-0">
               מציג {filteredDeals.length} מוצרים
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-gray-700">מיון:</span>
-              <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
-                <button onClick={() => setSortOrder('default')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${sortOrder === 'default' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>מומלצים</button>
-                <button onClick={() => setSortOrder('price-asc')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${sortOrder === 'price-asc' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>מהזול ליקר</button>
-                <button onClick={() => setSortOrder('price-desc')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${sortOrder === 'price-desc' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>מהיקר לזול</button>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+              <span className="text-xs font-semibold text-gray-500">מיון:</span>
+              <div className="flex bg-gray-50 border border-gray-200 rounded-md p-0.5">
+                <button onClick={() => setSortOrder('default')} className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${sortOrder === 'default' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>מומלצים</button>
+                <button onClick={() => setSortOrder('price-asc')} className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${sortOrder === 'price-asc' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>מהזול ליקר</button>
+                <button onClick={() => setSortOrder('price-desc')} className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${sortOrder === 'price-desc' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>מהיקר לזול</button>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredDeals.map((deal: Deal, index: number) => (
-              <div key={index} className="group bg-white rounded-3xl shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-300 overflow-hidden flex flex-col">
-                <div className="h-56 bg-gray-50 relative overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+            {filteredDeals.map((deal, index) => (
+              <div key={index} className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-200 flex flex-col h-full overflow-hidden text-right">
+                
+                <div className="aspect-square bg-gray-50 relative overflow-hidden shrink-0">
                   {deal.image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={deal.image} alt={deal.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-300">אין תמונה</div>
+                    <div className="flex items-center justify-center h-full text-xs text-gray-300">אין תמונה</div>
                   )}
                 </div>
+                
+                <div className="p-4 flex flex-col flex-grow gap-2.5">
+                  
+                  {/* אזור תגיות עם wrap טבעי וגובה מינימלי קבוע כדי שהכותרות יתחילו באותו מקום */}
+                  <div className="flex flex-wrap items-start content-start justify-start gap-1.5 min-h-[44px]">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${current.badge}`}>
+                      {deal.category || 'כללי'}
+                    </span>
+                    
+                    {deal.rating && (
+                      <div className="flex items-center gap-0.5 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-md border border-amber-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 fill-current shrink-0" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span className="text-[10px] font-bold">{deal.rating}</span>
+                      </div>
+                    )}
+                    
+                    {deal.sold && (
+                      <div className="flex items-center gap-1 bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="shrink-0" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                        <span className="text-[10px] font-medium">{formatSold(deal.sold)}</span>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="p-5 flex flex-col flex-grow gap-3">
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full self-start tracking-wide ${current.badge}`}>
-                    {deal.category || 'כללי'}
-                  </span>
-                  <h3 className="font-bold text-lg text-gray-900 leading-tight mt-1 line-clamp-2">
+                  <h3 className="font-bold text-sm text-gray-900 leading-snug line-clamp-2 mt-1">
                     {deal.title}
                   </h3>
-                  <p className="text-sm text-gray-500 line-clamp-3 mt-1 whitespace-pre-line text-right leading-relaxed">
+                  
+                  <p className="text-xs text-gray-600 line-clamp-2 whitespace-pre-line leading-relaxed">
                     {deal.description}
                   </p>
-
-                  <div className="mt-auto pt-5 flex items-center justify-between border-t border-gray-50">
-                    <span className="font-black text-2xl text-gray-900">{deal.price}</span>
+                  
+                  <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
+                    <span className="font-black text-lg text-gray-900" dir="ltr">{formatPrice(deal.price)}</span>
                     <a
                       href={deal.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`text-white font-bold py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${current.bg}`}
+                      className={`text-white text-sm font-bold py-1.5 px-4 rounded-lg transition-colors shadow-sm ${current.bg}`}
                     >
                       לקנייה
                     </a>
                   </div>
+
                 </div>
               </div>
             ))}
           </div>
+
           {(!filteredDeals || filteredDeals.length === 0) && (
-            <div className="text-center text-gray-500 mt-20 text-xl font-medium">לא נמצאו דילים התואמים לסינון.</div>
+            <div className="text-center text-gray-500 mt-16 text-sm font-medium">
+              לא נמצאו דילים התואמים לסינון.
+            </div>
           )}
         </main>
       </div>
