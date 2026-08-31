@@ -93,30 +93,42 @@ async function runScraper() {
           let rating = null;
           let sold = null;
           
-          const priceSelectors = [
-            '[class*="price--currentPriceText"]', 
-            '[class*="Price--currentPrice"]',
-            '.product-price-current',
-            '.product-price-value', 
-            '[class*="CurrentPrice--"]',
-            '[class*="price--current--"]',
-            '.uniform-banner-box-price',
-            'div[class*="product-price"]'
-          ];
-          for (const sel of priceSelectors) {
-            const el = document.querySelector(sel);
-            if (el && el.innerText.match(/\d/)) { 
-              price = el.innerText.replace(/\n/g, '').replace(/\s+/g, ' ').trim(); 
-              break; 
+          // 1. שיטה חדשה ומוחלטת: שאיבת המחיר מתגיות המטא של האתר
+          const metaPrice = document.querySelector('meta[property="og:price:amount"], meta[property="product:price:amount"]');
+          const metaCurrency = document.querySelector('meta[property="og:price:currency"], meta[property="product:price:currency"]');
+          
+          if (metaPrice && metaPrice.content) {
+            const currency = (metaCurrency && metaCurrency.content === 'ILS') ? '₪' : '$';
+            price = `${currency}${metaPrice.content}`;
+          } 
+          
+          // 2. גיבוי במקרה שתגיות המטא חסרות
+          if (!price) {
+            const priceSelectors = [
+              '[class*="price--currentPriceText"]', 
+              '[class*="Price--currentPrice"]',
+              '.product-price-current',
+              '.product-price-value',
+              '[class*="CurrentPrice--"]',
+              'span[class*="price"]'
+            ];
+            for (const sel of priceSelectors) {
+              const el = document.querySelector(sel);
+              if (el && el.innerText.match(/\d/)) { 
+                price = el.innerText.replace(/\n/g, '').replace(/\s+/g, ' ').trim(); 
+                break; 
+              }
             }
           }
 
+          // שליפת דירוג
           const ratingSelectors = ['.overview-rating-average', '[class*="reviewer--rating"]', '[class*="rating--"]', '.product-reviewer-reviews'];
           for (const sel of ratingSelectors) {
             const el = document.querySelector(sel);
             if (el && el.innerText.match(/\d/)) { rating = el.innerText.trim(); break; }
           }
 
+          // שליפת נתוני מכירות
           const soldSelectors = [
             '[class*="reviewer--sold"]', 
             '.product-reviewer-sold', 
