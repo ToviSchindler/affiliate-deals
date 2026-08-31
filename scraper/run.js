@@ -30,28 +30,29 @@ async function runScraper() {
       locale: 'he-IL'
     });
 
-    // הזרקת עוגיות כדי להכריח את אליאקספרס להציג מחירים בשקלים ולהישאר בגרסה הישראלית
     await context.addCookies([
       { name: 'aep_usuc_f', value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS', domain: '.aliexpress.com', path: '/' },
       { name: 'aep_usuc_f', value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS', domain: '.aliexpress.us', path: '/' }
     ]);
 
-    const page = await context.newPage();
-
     for (const row of rows) {
       const url = row.link; 
       if (!url) continue;
 
+      const isUpdateEmptyOnly = process.env.UPDATE_ONLY_EMPTY === 'true';
+      const hasPrice = row.price && row.price.toString().trim() !== '';
+
+      if (isUpdateEmptyOnly && hasPrice) {
+        console.log(`מדלג על: ${url} (הנתונים כבר קיימים)`);
+        continue; 
+      }
+
       console.log(`\nמנווט ל: ${url}`);
+      
+      // פותחים לשונית חדשה ונקייה לכל מוצר
+      const page = await context.newPage();
+
       try {
-        const isUpdateEmptyOnly = process.env.UPDATE_ONLY_EMPTY === 'true';
-        const hasPrice = row.price && row.price.toString().trim() !== '';
-
-        if (isUpdateEmptyOnly && hasPrice) {
-          console.log(`מדלג על: ${url} (הנתונים כבר קיימים)`);
-          continue; 
-        }
-
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
         
         try {
@@ -73,15 +74,13 @@ async function runScraper() {
           }
         } 
         
-        // ממתינים לטעינה ראשונית של העמוד
         await page.waitForTimeout(5000); 
 
-        // הפקודה החכמה: ממתין ספציפית עד שהטקסט בעמוד יכיל סמל מטבע (₪ או $) כדי להבטיח שהמחיר סיים להיטען
         await page.waitForFunction(() => {
           return document.body.innerText.includes('₪') || document.body.innerText.includes('$') || document.body.innerText.includes('ILS');
-        }, { timeout: 12000 }).catch(() => console.log('⚠️ לא זוהה סמל מטבע על המסך, ממשיך בסריקה...'));
+        }, { timeout: 12000 }).catch(() => console.log('⚠️ לא זוהה סמל מטבע, ממשיך בסריקה...'));
 
-        await page.waitForTimeout(3000); // עוד 3 שניות שולי ביטחון לרינדור
+        await page.waitForTimeout(3000); 
 
         const finalUrl = page.url();
         const pageTitle = await page.title();
@@ -93,14 +92,12 @@ async function runScraper() {
           let rating = null;
           let sold = null;
           
-          // 1. קוד מקור (window.runParams)
           try {
             if (window.runParams && window.runParams.data && window.runParams.data.priceModule) {
               price = window.runParams.data.priceModule.formatedActivityPrice || window.runParams.data.priceModule.formatedPrice;
             }
           } catch (e) {}
 
-          // 2. תגיות מטא
           if (!price) {
             const metaPrice = document.querySelector('meta[property="og:price:amount"], meta[property="product:price:amount"]');
             const metaCurrency = document.querySelector('meta[property="og:price:currency"], meta[property="product:price:currency"]');
@@ -110,7 +107,6 @@ async function runScraper() {
             } 
           }
           
-          // 3. סלקטורים קלאסיים
           if (!price) {
             const priceSelectors = ['[class*="price--currentPriceText"]', '[class*="Price--currentPrice"]', '.product-price-current', '[class*="CurrentPrice--"]'];
             for (const sel of priceSelectors) {
@@ -122,7 +118,6 @@ async function runScraper() {
             }
           }
 
-          // 4. "צייד מחירים" - חיפוש אגרסיבי של כל אלמנט שמכיל קלאס של price ויש בו שקל או דולר
           if (!price) {
             const allSpans = Array.from(document.querySelectorAll('span, div'));
             for (const el of allSpans) {
@@ -135,7 +130,6 @@ async function runScraper() {
             }
           }
 
-          // שליפת דירוג
           try {
             if (window.runParams && window.runParams.data && window.runParams.data.titleModule && window.runParams.data.titleModule.feedbackRating) {
               rating = window.runParams.data.titleModule.feedbackRating.averageStar;
@@ -150,7 +144,6 @@ async function runScraper() {
             }
           }
 
-          // שליפת מכירות
           try {
             if (window.runParams && window.runParams.data && window.runParams.data.titleModule && window.runParams.data.titleModule.tradeCount) {
               sold = window.runParams.data.titleModule.tradeCount;
@@ -185,7 +178,15 @@ async function runScraper() {
 
       } catch (error) {
         console.error(`❌ שגיאה בשליפת הנתונים מהקישור: ${url}`, error.message);
+      } finally {
+        // סוגרים את הלשונית תמיד, גם אם הייתה שגיאה
+        await page.close();
       }
+
+      // מרווח נשימה אקראי בין מוצר למוצר (בין 4 ל-10 שניות)
+      const delay = Math.floor(Math.random() * 6000) + 4000;
+      console.log(`⏳ ממתין ${delay / 1000} שניות לפני המוצר הבא...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
 
     await browser.close();

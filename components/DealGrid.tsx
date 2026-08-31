@@ -66,9 +66,16 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
     setSelectedCategory(selectedCategory === cat && cat !== '' ? '' : cat);
   };
 
+  // פונקציה חכמה לניקוי המחיר מטקסטים עודפים
   const formatPrice = (priceStr: string) => {
     if (!priceStr) return '';
-    return priceStr.replace(/^([^\d]+)([\d]+)/, '$1 $2');
+    // שולף רק את המספר הראשון (המחיר האמיתי) ומתעלם משאר הטקסט
+    const numMatch = priceStr.match(/\d+(?:\.\d+)?/);
+    if (numMatch) {
+      const symbol = priceStr.includes('$') ? '$' : '₪';
+      return `${symbol} ${numMatch[0]}`;
+    }
+    return priceStr;
   };
 
   const formatSold = (soldStr?: string) => {
@@ -108,14 +115,12 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
         </aside>
 
         <main className="flex-1 w-full">
-          {/* סרגל עליון משודרג עם חיפוש */}
           <div className="flex flex-col xl:flex-row justify-between items-center bg-white p-3 px-4 rounded-xl shadow-sm mb-5 border border-gray-100 gap-4 xl:gap-0">
             <div className="text-gray-500 text-sm font-medium w-full xl:w-auto text-right">
               מציג {filteredDeals.length} מוצרים
             </div>
             
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto justify-end">
-              {/* שורת חיפוש */}
               <div className="relative w-full sm:w-64">
                 <input 
                   type="text" 
@@ -129,7 +134,6 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
                 </svg>
               </div>
 
-              {/* מיון */}
               <div className="flex items-center gap-2 w-full sm:w-auto justify-start">
                 <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">מיון:</span>
                 <div className="flex bg-gray-50 border border-gray-200 rounded-md p-0.5">
@@ -170,9 +174,15 @@ export default function DealGrid({ deals, storeName, colorTheme }: { deals: Deal
                   </div>
                   <h3 className="font-bold text-sm text-gray-900 leading-snug line-clamp-2 mt-1">{deal.title}</h3>
                   <p className="text-xs text-gray-600 line-clamp-2 whitespace-pre-line leading-relaxed">{deal.description}</p>
-                  <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
-                    <span className="font-black text-lg text-gray-900" dir="ltr">{formatPrice(deal.price)}</span>
-                    <a href={deal.link} target="_blank" rel="noopener noreferrer" className={`text-white text-sm font-bold py-1.5 px-4 rounded-lg transition-colors shadow-sm ${current.bg}`}>לקנייה</a>
+                  
+                  {/* נעילת השורה התחתונה לעיצוב נקי וחלק */}
+                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
+                    <div className="font-black text-xl text-gray-900 whitespace-nowrap" dir="ltr">
+                      {formatPrice(deal.price)}
+                    </div>
+                    <a href={deal.link} target="_blank" rel="noopener noreferrer" className={`text-white text-sm font-bold py-2 px-5 rounded-lg transition-colors shadow-sm whitespace-nowrap ${current.bg}`}>
+                      לקנייה
+                    </a>
                   </div>
                 </div>
               </div>
