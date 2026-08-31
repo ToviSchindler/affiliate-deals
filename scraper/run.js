@@ -76,10 +76,25 @@ async function runScraper() {
           let rating = null;
           let sold = null;
           
-          const priceSelectors = ['[class*="price--currentPriceText"]', '.product-price-value', '.uniform-banner-box-price', '.price--current--'];
+          // רשימה מורחבת של סלקטורים למחיר שמכסה את כל העיצובים החדשים של אליאקספרס
+          const priceSelectors = [
+            '[class*="price--currentPriceText"]', 
+            '[class*="Price--currentPrice"]',
+            '.product-price-current',
+            '.product-price-value', 
+            '[class*="CurrentPrice--"]',
+            '[class*="price--current--"]',
+            '.uniform-banner-box-price',
+            'div[class*="product-price"]'
+          ];
+
           for (const sel of priceSelectors) {
             const el = document.querySelector(sel);
-            if (el && el.innerText.match(/\d/)) { price = el.innerText.trim(); break; }
+            if (el && el.innerText.match(/\d/)) { 
+              // ניקוי ירידות שורה במקרה שאליאקספרס פיצלו את הדולרים והסנטים לאלמנטים שונים
+              price = el.innerText.replace(/\n/g, '').replace(/\s+/g, ' ').trim(); 
+              break; 
+            }
           }
 
           const ratingSelectors = ['.overview-rating-average', '[class*="reviewer--rating"]', '[class*="rating--"]', '.product-reviewer-reviews'];
