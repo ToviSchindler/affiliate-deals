@@ -17,7 +17,6 @@ export default function CouponsClient({ initialCoupons }: { initialCoupons: Coup
   const currentCoupons = initialCoupons.filter(c => c.store === activeStore);
   const btnColor = activeStore === 'aliexpress' ? 'bg-[#E52F20] hover:bg-[#c9271a]' : 'bg-[#FB7701] hover:bg-[#e06900]';
 
-  // פונקציית העתקה ללוח עם חיווי ויזואלי
   const handleCopy = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
@@ -26,12 +25,21 @@ export default function CouponsClient({ initialCoupons }: { initialCoupons: Coup
 
   return (
     <div className="bg-slate-50 min-h-screen font-sans flex flex-col" dir="rtl">
-      <div className="w-full bg-slate-900 text-white text-sm py-3 px-6 flex justify-between items-center">
-        <span className="font-bold tracking-widest">DealFinder PRO</span>
-        <Link href="/" className="hover:text-slate-300 transition-colors font-medium flex items-center gap-1">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          חזרה לדילים
-        </Link>
+      
+      {/* תפריט עליון אחיד וקבוע */}
+      <div className="w-full bg-slate-900 text-white text-sm py-3 px-6 flex justify-between items-center z-50 sticky top-0">
+        <span className="font-bold tracking-widest text-lg">DealFinder PRO</span>
+        <div className="flex gap-4 md:gap-6">
+          <Link href="/" className="hover:text-blue-400 transition-colors font-medium flex items-center gap-1.5">
+            <span className="hidden md:inline">ראשי</span> 🏠
+          </Link>
+          <Link href="/coupons" className="hover:text-amber-400 transition-colors font-medium flex items-center gap-1.5">
+            <span className="hidden md:inline">קופונים</span> ✨
+          </Link>
+          <Link href="/support" className="hover:text-emerald-400 transition-colors font-medium flex items-center gap-1.5">
+            <span className="hidden md:inline">מדריכים ותמיכה</span> 💡
+          </Link>
+        </div>
       </div>
 
       <main className="max-w-4xl mx-auto px-4 py-12 flex-grow w-full">
@@ -64,7 +72,6 @@ export default function CouponsClient({ initialCoupons }: { initialCoupons: Coup
             {currentCoupons.map((coupon, idx) => (
               <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col transition-transform hover:-translate-y-1 duration-300 h-full">
                 
-                {/* אזור הטקסט שמותאם דינמית בגובה (flex-grow) */}
                 <div className="flex flex-col flex-grow items-center text-center mb-6">
                   <h3 className={`font-black text-xl md:text-2xl mb-3 leading-tight ${activeStore === 'aliexpress' ? 'text-[#E52F20]' : 'text-[#FB7701]'}`}>
                     {coupon.discount}
@@ -74,7 +81,6 @@ export default function CouponsClient({ initialCoupons }: { initialCoupons: Coup
                   </p>
                 </div>
                 
-                {/* אזור הכפתורים שמקובע תמיד לתחתית הכרטיסייה (mt-auto) */}
                 <div className="mt-auto w-full">
                   <button 
                     onClick={() => handleCopy(coupon.code)}
@@ -105,10 +111,6 @@ export default function CouponsClient({ initialCoupons }: { initialCoupons: Coup
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-lg font-bold text-slate-800 mb-2">DealFinder PRO</h2>
           <p className="text-slate-600 text-sm mb-4">אנחנו מביאים מוצרים מומלצים ודילים משתלמים, ומלווים אתכם מהקנייה ועד לקבלת החבילה.</p>
-          <div className="inline-flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-            <a href="mailto:ali.finder12@gmail.com" className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">ali.finder12@gmail.com</a>
-          </div>
         </div>
       </footer>
     </div>

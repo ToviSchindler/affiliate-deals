@@ -1,5 +1,6 @@
 import StoreFront from "../components/StoreFront";
 import FloatingCouponBadge from "../components/FloatingCouponBadge";
+import Link from 'next/link';
 // @ts-ignore
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 
@@ -9,10 +10,15 @@ const SHEET_ID = '1quhfHpoheGvE75s8xjDz2zoXP1H9xz9K5ngKYS8_J94';
 
 async function fetchDeals(storeName: string) {
   try {
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+      console.warn("⚠️ חסרים משתני סביבה של גוגל (.env.local) - מדלג על משיכת הנתונים.");
+      return [];
+    }
+
     const doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL as string,
-      private_key: (process.env.GOOGLE_PRIVATE_KEY as string).replace(/\\n/g, '\n'),
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     });
     await doc.loadInfo();
     
@@ -46,9 +52,25 @@ export default async function Home() {
   return (
     <div className="bg-slate-50 min-h-screen font-sans flex flex-col relative">
       
+      {/* תפריט עליון אחיד וקבוע */}
+      <div className="w-full bg-slate-900 text-white text-sm py-3 px-6 flex justify-between items-center z-50 sticky top-0" dir="rtl">
+        <span className="font-bold tracking-widest text-lg">DealFinder PRO</span>
+        <div className="flex gap-4 md:gap-6">
+          <Link href="/" className="hover:text-blue-400 transition-colors font-medium flex items-center gap-1.5">
+            <span className="hidden md:inline">ראשי</span> 🏠
+          </Link>
+          <Link href="/coupons" className="hover:text-amber-400 transition-colors font-medium flex items-center gap-1.5">
+            <span className="hidden md:inline">קופונים</span> ✨
+          </Link>
+          <Link href="/support" className="hover:text-emerald-400 transition-colors font-medium flex items-center gap-1.5">
+            <span className="hidden md:inline">מדריכים ותמיכה</span> 💡
+          </Link>
+        </div>
+      </div>
+
       <FloatingCouponBadge />
 
-      <div className="relative flex flex-col items-center justify-center pt-20 pb-16 overflow-hidden flex-grow">
+      <div className="relative flex flex-col items-center justify-center pt-16 pb-16 overflow-hidden flex-grow">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse" style={{ animationDelay: '1.5s' }}></div>
 
@@ -90,8 +112,11 @@ export default async function Home() {
               
               <div className="flex flex-col items-center text-center px-2 py-4 md:py-2 group cursor-default transition-transform hover:scale-105 duration-300">
                 <div className="text-purple-600 mb-3 bg-purple-50 p-4 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.5-1 2-1.5.5-1 1-1.5 1-2.5 0-2.7-1.5-5-3-5Z"/><path d="M15 8.5c-.5-.5-1-.5-1.5-.5"/><path d="M11.5 7.5c-.5-.5-1-.5-1.5-.5"/></svg>
-                </div>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/>
+    <path d="M21 16v2a4 4 0 0 1-4 4h-5"/>
+  </svg>
+</div>
                 <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2">ליווי מלא</h3>
                 <p className="text-sm md:text-base text-slate-600 leading-relaxed">איתכם לאורך כל הדרך, מהקנייה ועד לקבלת החבילה.</p>
               </div>
