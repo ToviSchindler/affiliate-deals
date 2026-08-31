@@ -24,7 +24,11 @@ async function runScraper() {
 
     const browser = await chromium.launch({ 
       headless: true,
-      args: ['--disable-blink-features=AutomationControlled']
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--disable-web-security',
+        '--window-size=1920,1080'
+      ]
     });
     
     const context = await browser.newContext({
@@ -52,22 +56,35 @@ async function runScraper() {
         
         try {
           await page.waitForFunction(() => !window.location.href.includes('s.click.aliexpress'), { timeout: 25000 });
-          console.log('הפניית האפיליאט עברה בהצלחה. ממתין לטעינת דף המוצר...');
-          
-          // הפקודה החדשה: מחכה שהדף הסופי עצמו יסיים להיטען
-          await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
         } catch (e) {
           console.log('⚠️ אזהרה: ההפניה למוצר התעכבה.');
         }
 
-        // הגדלנו מעט את זמן ההמתנה לרינדור הסופי של המחירים
-        await page.waitForTimeout(8000); 
+        let currentUrl = page.url();
+        
+        // זיהוי חסימת CAPTCHA או נפילה לעמוד Punish של אליאקספרס
+        if (currentUrl.includes('punish') || currentUrl.includes('_____tmd_____') || await page.title() === 'CAPTCHA Verification') {
+          console.log('🛑 זוהתה חסימת CAPTCHA מול קישור השותפים!');
+          
+          // חילוץ מזהה המוצר מתוך הכתובת החסומה
+          const itemMatch = currentUrl.match(/item\/(\d+)\.html/);
+          if (itemMatch) {
+            const cleanUrl = `https://www.aliexpress.com/item/${itemMatch[1]}.html`;
+            console.log(`🔄 מפעיל עקיפה: מנווט ישירות לכתובת הנקייה של המוצר...`);
+            await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.waitForTimeout(6000);
+          } else {
+            console.log('⚠️ לא ניתן לחלץ מזהה מוצר מתוך הכתובת החסומה.');
+          }
+        } else {
+          await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+          await page.waitForTimeout(8000); 
+        }
 
-        // מדפיסים את הכתובת הסופית כדי שנוכל לחקור במקרה של תקלה
         const finalUrl = page.url();
         const pageTitle = await page.title();
         console.log(`כתובת סופית: ${finalUrl}`);
-        console.log(`העמוד נטען. כותרת: ${pageTitle || '[כותרת ריקה] - ייתכן שהדף נטען לאט'}`);
+        console.log(`העמוד נטען. כותרת: ${pageTitle || '[כותרת ריקה]'}`);
 
         await page.screenshot({ path: 'debug_page.png' });
 
@@ -76,7 +93,6 @@ async function runScraper() {
           let rating = null;
           let sold = null;
           
-          // רשימה מורחבת של סלקטורים למחיר שמכסה את כל העיצובים החדשים של אליאקספרס
           const priceSelectors = [
             '[class*="price--currentPriceText"]', 
             '[class*="Price--currentPrice"]',
@@ -87,11 +103,9 @@ async function runScraper() {
             '.uniform-banner-box-price',
             'div[class*="product-price"]'
           ];
-
           for (const sel of priceSelectors) {
             const el = document.querySelector(sel);
             if (el && el.innerText.match(/\d/)) { 
-              // ניקוי ירידות שורה במקרה שאליאקספרס פיצלו את הדולרים והסנטים לאלמנטים שונים
               price = el.innerText.replace(/\n/g, '').replace(/\s+/g, ' ').trim(); 
               break; 
             }
@@ -112,7 +126,6 @@ async function runScraper() {
             '[class*="sales-text"]',
             'span[class*="trade"]'
           ];
-          
           for (const sel of soldSelectors) {
             const el = document.querySelector(sel);
             if (el && el.innerText) {
@@ -136,7 +149,7 @@ async function runScraper() {
           await row.save();
           console.log(`✅ עודכן! מחיר: ${extractedData.price || '-'} | דירוג: ${extractedData.rating || '-'} | נמכרו: ${extractedData.sold || '-'}`);
         } else {
-          console.log(`⚠️ לא נמצאו נתונים! ייתכן שהסלקטורים לא תואמים או שאליאקספרס חסם אותנו בדף הזה.`);
+          console.log(`⚠️ לא נמצאו נתונים בסריקת הכתובת הנקייה.`);
         }
 
       } catch (error) {
