@@ -25,26 +25,15 @@ async function runScraper() {
       args: ['--disable-blink-features=AutomationControlled', '--window-size=1920,1080']
     });
     
-    // הסרנו את הכותרות המזויפות כדי למנוע התנגשות עם שרתי האוטומציה
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
       locale: 'he-IL'
     });
 
-    // הזרקת עוגיות כדי להכריח את אליאקספרס להישאר בגרסה הישראלית ולהציג מחירים
+    // הזרקת עוגיות כדי להכריח את אליאקספרס להציג מחירים בשקלים ולהישאר בגרסה הישראלית
     await context.addCookies([
-      {
-        name: 'aep_usuc_f',
-        value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS',
-        domain: '.aliexpress.com',
-        path: '/'
-      },
-      {
-        name: 'aep_usuc_f',
-        value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS',
-        domain: '.aliexpress.us',
-        path: '/'
-      }
+      { name: 'aep_usuc_f', value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS', domain: '.aliexpress.com', path: '/' },
+      { name: 'aep_usuc_f', value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS', domain: '.aliexpress.us', path: '/' }
     ]);
 
     const page = await context.newPage();
@@ -74,7 +63,6 @@ async function runScraper() {
         let currentUrl = page.url();
         let tempTitle = await page.title();
         
-        // זיהוי חסימה שקטה (מסך לבן) בנוסף לזיהוי קפצ'ה
         if (currentUrl.includes('punish') || currentUrl.includes('_____tmd_____') || tempTitle === 'CAPTCHA Verification' || tempTitle.trim() === '') {
           console.log('🛑 זוהתה חסימה שקטה או CAPTCHA מול קישור השותפים!');
           const itemMatch = currentUrl.match(/item\/(\d+)\.html/);
@@ -82,12 +70,18 @@ async function runScraper() {
             const cleanUrl = `https://he.aliexpress.com/item/${itemMatch[1]}.html`;
             console.log(`🔄 מפעיל עקיפה: מנווט ישירות לדומיין המקומי...`);
             await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-          } else {
-            console.log('⚠️ לא ניתן לחלץ מזהה מוצר מתוך הכתובת.');
           }
         } 
         
-        await page.waitForTimeout(8000); 
+        // ממתינים לטעינה ראשונית של העמוד
+        await page.waitForTimeout(5000); 
+
+        // הפקודה החכמה: ממתין ספציפית עד שהטקסט בעמוד יכיל סמל מטבע (₪ או $) כדי להבטיח שהמחיר סיים להיטען
+        await page.waitForFunction(() => {
+          return document.body.innerText.includes('₪') || document.body.innerText.includes('$') || document.body.innerText.includes('ILS');
+        }, { timeout: 12000 }).catch(() => console.log('⚠️ לא זוהה סמל מטבע על המסך, ממשיך בסריקה...'));
+
+        await page.waitForTimeout(3000); // עוד 3 שניות שולי ביטחון לרינדור
 
         const finalUrl = page.url();
         const pageTitle = await page.title();
@@ -99,22 +93,14 @@ async function runScraper() {
           let rating = null;
           let sold = null;
           
+          // 1. קוד מקור (window.runParams)
           try {
-            if (window.runParams && window.runParams.data) {
-              const data = window.runParams.data;
-              if (data.priceModule) {
-                price = data.priceModule.formatedActivityPrice || data.priceModule.formatedPrice;
-              }
-              if (data.titleModule && data.titleModule.tradeCount) {
-                sold = data.titleModule.tradeCount;
-                if (!sold.includes('נמכרו')) sold += ' נמכרו';
-              }
-              if (data.titleModule && data.titleModule.feedbackRating) {
-                rating = data.titleModule.feedbackRating.averageStar;
-              }
+            if (window.runParams && window.runParams.data && window.runParams.data.priceModule) {
+              price = window.runParams.data.priceModule.formatedActivityPrice || window.runParams.data.priceModule.formatedPrice;
             }
           } catch (e) {}
 
+          // 2. תגיות מטא
           if (!price) {
             const metaPrice = document.querySelector('meta[property="og:price:amount"], meta[property="product:price:amount"]');
             const metaCurrency = document.querySelector('meta[property="og:price:currency"], meta[property="product:price:currency"]');
@@ -124,6 +110,7 @@ async function runScraper() {
             } 
           }
           
+          // 3. סלקטורים קלאסיים
           if (!price) {
             const priceSelectors = ['[class*="price--currentPriceText"]', '[class*="Price--currentPrice"]', '.product-price-current', '[class*="CurrentPrice--"]'];
             for (const sel of priceSelectors) {
@@ -135,6 +122,26 @@ async function runScraper() {
             }
           }
 
+          // 4. "צייד מחירים" - חיפוש אגרסיבי של כל אלמנט שמכיל קלאס של price ויש בו שקל או דולר
+          if (!price) {
+            const allSpans = Array.from(document.querySelectorAll('span, div'));
+            for (const el of allSpans) {
+              const text = el.innerText || '';
+              const className = el.className || '';
+              if (typeof className === 'string' && className.toLowerCase().includes('price') && (text.includes('₪') || text.includes('$')) && text.match(/\d/)) {
+                price = text.replace(/\n/g, '').replace(/\s+/g, ' ').trim();
+                break;
+              }
+            }
+          }
+
+          // שליפת דירוג
+          try {
+            if (window.runParams && window.runParams.data && window.runParams.data.titleModule && window.runParams.data.titleModule.feedbackRating) {
+              rating = window.runParams.data.titleModule.feedbackRating.averageStar;
+            }
+          } catch (e) {}
+
           if (!rating) {
             const ratingSelectors = ['.overview-rating-average', '[class*="reviewer--rating"]'];
             for (const sel of ratingSelectors) {
@@ -142,6 +149,14 @@ async function runScraper() {
               if (el && el.innerText.match(/\d/)) { rating = el.innerText.trim(); break; }
             }
           }
+
+          // שליפת מכירות
+          try {
+            if (window.runParams && window.runParams.data && window.runParams.data.titleModule && window.runParams.data.titleModule.tradeCount) {
+              sold = window.runParams.data.titleModule.tradeCount;
+              if (!sold.includes('נמכרו')) sold += ' נמכרו';
+            }
+          } catch (e) {}
 
           if (!sold) {
             const soldSelectors = ['[class*="reviewer--sold"]', '.product-reviewer-sold', '[class*="trade-count"]'];
