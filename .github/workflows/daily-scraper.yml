@@ -32,4 +32,7 @@ jobs:
 
       - name: Run Scraper
         working-directory: ./scraper
+        env:
+          # תופס את הדגל שנשלח מגוגל שיטס ומעביר אותו ל-Node.js
+          UPDATE_ONLY_EMPTY: ${{ github.event.client_payload.updateEmptyOnly }}
         run: node run.js
