@@ -22,7 +22,11 @@ async function runScraper() {
     const rows = await sheet.getRows();
     console.log(`נטענו ${rows.length} שורות מהגיליון. מתחיל סקרייפינג...`);
 
-    const browser = await chromium.launch({ headless: true });
+    // אתחול הדפדפן עם ארגומנטים שמוחקים את זיהוי האוטומציה של כרום
+    const browser = await chromium.launch({ 
+      headless: true,
+      args: ['--disable-blink-features=AutomationControlled']
+    });
     
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -45,8 +49,19 @@ async function runScraper() {
           continue; 
         }
 
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-        await page.waitForTimeout(6000); 
+        // טעינת הקישור הראשוני (s.click)
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        
+        // המתנה לשינוי ה-URL כדי לוודא ששרשרת ההפניות של האפיליאט הסתיימה
+        try {
+          await page.waitForFunction(() => !window.location.href.includes('s.click.aliexpress'), { timeout: 25000 });
+          console.log('הפניית האפיליאט עברה בהצלחה למסך המוצר.');
+        } catch (e) {
+          console.log('⚠️ אזהרה: ההפניה למוצר התעכבה, מנסה להמשיך בסריקה בכל זאת.');
+        }
+
+        // המתנה לרינדור סופי של המחירים והביקורות
+        await page.waitForTimeout(5000); 
 
         const pageTitle = await page.title();
         console.log(`העמוד נטען. כותרת: ${pageTitle}`);
