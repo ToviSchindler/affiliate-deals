@@ -25,22 +25,10 @@ async function runScraper() {
       args: ['--disable-blink-features=AutomationControlled', '--window-size=1920,1080']
     });
     
-    // הוספת כותרות אבטחה (Headers) שמדמות דפדפן כרום אנושי מדויק כדי לעקוף את Akamai
+    // הסרנו את הכותרות המזויפות כדי למנוע התנגשות עם שרתי האוטומציה
     const context = await browser.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
-      locale: 'he-IL',
-      extraHTTPHeaders: {
-        'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'cross-site',
-        'Sec-Fetch-User': '?1',
-        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"'
-      }
+      locale: 'he-IL'
     });
     const page = await context.newPage();
 
@@ -67,15 +55,18 @@ async function runScraper() {
         }
 
         let currentUrl = page.url();
+        let tempTitle = await page.title();
         
-        if (currentUrl.includes('punish') || currentUrl.includes('_____tmd_____') || await page.title() === 'CAPTCHA Verification') {
-          console.log('🛑 זוהתה חסימת CAPTCHA מול קישור השותפים!');
+        // זיהוי חסימה שקטה (מסך לבן) בנוסף לזיהוי קפצ'ה
+        if (currentUrl.includes('punish') || currentUrl.includes('_____tmd_____') || tempTitle === 'CAPTCHA Verification' || tempTitle.trim() === '') {
+          console.log('🛑 זוהתה חסימה שקטה או CAPTCHA מול קישור השותפים!');
           const itemMatch = currentUrl.match(/item\/(\d+)\.html/);
           if (itemMatch) {
-            // מעבר לתת-הדומיין המקומי (he.aliexpress.com) שבו חומת האש סלחנית יותר
             const cleanUrl = `https://he.aliexpress.com/item/${itemMatch[1]}.html`;
-            console.log(`🔄 מפעיל עקיפה: מנווט ישירות לכתובת המקומית הנקייה...`);
+            console.log(`🔄 מפעיל עקיפה: מנווט ישירות לדומיין המקומי...`);
             await page.goto(cleanUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          } else {
+            console.log('⚠️ לא ניתן לחלץ מזהה מוצר מתוך הכתובת.');
           }
         } 
         
