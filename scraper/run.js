@@ -30,6 +30,23 @@ async function runScraper() {
       viewport: { width: 1920, height: 1080 },
       locale: 'he-IL'
     });
+
+    // הזרקת עוגיות כדי להכריח את אליאקספרס להישאר בגרסה הישראלית ולהציג מחירים
+    await context.addCookies([
+      {
+        name: 'aep_usuc_f',
+        value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS',
+        domain: '.aliexpress.com',
+        path: '/'
+      },
+      {
+        name: 'aep_usuc_f',
+        value: 'region=IL&site=isr&b_locale=he_IL&c_tp=ILS',
+        domain: '.aliexpress.us',
+        path: '/'
+      }
+    ]);
+
     const page = await context.newPage();
 
     for (const row of rows) {
