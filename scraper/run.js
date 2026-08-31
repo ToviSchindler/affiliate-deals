@@ -36,12 +36,14 @@ async function runScraper() {
       try {
         const isUpdateEmptyOnly = process.env.UPDATE_ONLY_EMPTY === 'true';
         
-        // אם בחרנו לעדכן רק ריקים, ויש כבר מחיר בשורה הזו - הסקריפט ידלג עליה
-        if (isUpdateEmptyOnly && row.price) {
+        // מוודא שהתא באמת מכיל טקסט ולא רק רווחים או תווים ריקים
+        const hasPrice = row.price && row.price.toString().trim() !== '';
+
+        if (isUpdateEmptyOnly && hasPrice) {
           console.log(`מדלג על: ${url} (הנתונים כבר קיימים)`);
           continue; 
         }
-        
+
         // מחכים פחות זמן לטעינה המלאה, אבל נותנים ספייס להפניות של הלינק
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
         
